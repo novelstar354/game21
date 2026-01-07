@@ -2,105 +2,120 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>辛口パチンコ</title>
+<title>辛口パチンコ 完全版</title>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
-<link rel="icon" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQEak-GtphxWlHwb6BDjNYDFDFMMLRueq5xhQcEKaG5WkXzLMZC9yM9Dnzu&s=10" sizes="16×16" type="image/png" /> 
+ <link rel="icon" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSoMdtS_7rFl2-K_Kd4LVlvt8rVc4peP6zifgcz-Uf7JQPukWdWPew_Wm5l&s=10" sizes="16×16" type="image/png" />  
 <style>
 body{margin:0;background:#020617;color:#fff;font-family:sans-serif;text-align:center}
 header{padding:10px;font-size:18px;font-weight:bold}
 #game{position:relative;margin:auto;max-width:420px;height:640px;
- border:3px solid #38bdf8;border-radius:12px;overflow:hidden}
+border:3px solid #38bdf8;border-radius:12px;overflow:hidden}
 canvas{display:block}
 #ui{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:8px}
 button{padding:8px 10px;border:none;border-radius:8px;
- background:#38bdf8;color:#000;font-weight:bold}
+background:#38bdf8;color:#000;font-weight:bold}
 button.active{background:#22c55e}
+button.danger{background:#ef4444;color:#fff}
 
 /* レバー */
 #lever{position:absolute;right:10px;bottom:70px;width:40px;height:160px;
- background:#334155;border-radius:20px}
+background:#334155;border-radius:20px}
 #leverKnob{position:absolute;left:50%;transform:translateX(-50%);
- width:50px;height:50px;background:#facc15;border-radius:50%;top:0}
+width:50px;height:50px;background:#facc15;border-radius:50%;top:0}
 
-/* クールタイム */
+/* クール */
 #coolWrap{
- position:absolute;left:10px;top:10px;width:140px;height:12px;
- border:1px solid #38bdf8;border-radius:6px;overflow:hidden;
- background:#020617;z-index:10
-}
-#coolBar{height:100%;width:100%;background:#38bdf8}
+position:absolute;left:10px;top:10px;width:140px;height:12px;
+border:1px solid #38bdf8;border-radius:6px;overflow:hidden;
+background:#020617;z-index:10}
+#coolBar{height:100%;background:#38bdf8}
 
-/* 大当たり */
-#bigWin{position:absolute;inset:0;display:none;align-items:center;
- justify-content:center;background:rgba(0,0,0,.85);z-index:5}
+/* オーバーレイ */
+#bigWin,#gameOver{
+position:absolute;inset:0;display:none;align-items:center;
+justify-content:center;background:rgba(0,0,0,.9);z-index:10;
+flex-direction:column}
 #bigWin span{font-size:42px;color:#facc15;
- animation:zoom 1s infinite alternate}
+animation:zoom 1s infinite alternate}
 @keyframes zoom{to{transform:scale(1.3)}}
+#gameOver span{font-size:36px;color:#ef4444;margin-bottom:10px}
 
-/* 操作説明 */
+/* 操作 */
 #help{
- position:absolute;left:8px;bottom:8px;
- background:rgba(0,0,0,.6);border-radius:8px;
- padding:8px 10px;font-size:12px;line-height:1.4;text-align:left;
- pointer-events:none;z-index:10
-}
-footer {
+position:absolute;left:8px;bottom:8px;
+background:rgba(0,0,0,.6);border-radius:8px;
+padding:8px 10px;font-size:12px;text-align:left}
+   footer {
            padding: 30px;
            text-align: center;
            font-size: 0.85rem;
            color: rgba(255,255,255,0.5);
            border-top: 1px solid rgba(255,255,255,0.1);
            margin-top: 60px;
-       }
+   }
 </style>
 </head>
 <body>
 
-<header>パチンコ</header>
+<header>辛口パチンコ 完全版</header>
 
 <div id="game">
- <canvas id="c" width="420" height="640"></canvas>
+<canvas id="c" width="420" height="640"></canvas>
 
- <div id="coolWrap"><div id="coolBar"></div></div>
+<div id="coolWrap"><div id="coolBar"></div></div>
+<div id="lever"><div id="leverKnob"></div></div>
 
- <div id="lever"><div id="leverKnob"></div></div>
+<div id="bigWin"><span>🎉 大当たり！ 🎉</span></div>
+<div id="gameOver"><span>GAME OVER</span><div>資金が尽きました</div></div>
 
- <div id="bigWin"><span>🎉 大当たり！ 🎉</span></div>
-
- <div id="help">
-  <b>操作</b><br>
-  Space：発射<br>
-  A：AUTO連射<br>
-  B：BGM<br>
-  F：フルスクリーン切替<br>
-  レバー：引いて離す
- </div>
+<div id="help">
+Space：発射<br>
+A：AUTO<br>
+B：BGM<br>
+F：FULL
+</div>
 </div>
 
 <div id="ui">
- 玉:<span id="balls">300</span>
- <button onclick="shoot()">発射</button>
- <button id="autoBtn" onclick="toggleAuto()">AUTO</button>
- <button onclick="toggleBgm()">BGM</button>
- <button onclick="toggleFullscreen()">FULL</button>
+💴<span id="money">100000</span>円　
+🎱<span id="balls">300</span><br>
+📉 投資:<span id="invest">0</span>円　
+📈 回収率:<span id="rate">--</span>%<br>
+
+<button onclick="buyBalls()">玉100発 ¥10,000</button>
+<button onclick="shoot()">発射</button>
+<button id="autoBtn" onclick="toggleAuto()">AUTO</button>
+<button onclick="saveGame()">SAVE</button>
+<button onclick="loadGame()">LOAD</button>
+<button class="danger" onclick="resetGame()">RESET</button>
 </div>
-<footer>
-       © 2025 GAMEHUB - All Rights Reserved.
+    <footer>
+       © 2025 STAR CORPORATION - All Rights Reserved.
    </footer>
+
+
 <script>
-/* ===== Canvas ===== */
 const c=document.getElementById("c"),ctx=c.getContext("2d");
 
-/* ===== State ===== */
-let balls=300,ballList=[];
-const ballsEl=document.getElementById("balls");
+/* 初期値 */
+const INIT_MONEY=100000, INIT_BALLS=300;
 
-/* ===== クールタイム ===== */
+/* 状態 */
+let money=INIT_MONEY, balls=INIT_BALLS, invest=0;
+let ballList=[], gameOver=false;
+
+/* UI */
+const moneyEl=document.getElementById("money");
+const ballsEl=document.getElementById("balls");
+const investEl=document.getElementById("invest");
+const rateEl=document.getElementById("rate");
+
+/* クール */
 const COOLDOWN=800;
 let lastShot=0;
 const coolBar=document.getElementById("coolBar");
 
-/* ===== AUTO連射 ===== */
+/* AUTO */
 let auto=false;
 const autoBtn=document.getElementById("autoBtn");
 function toggleAuto(){
@@ -108,94 +123,97 @@ function toggleAuto(){
  autoBtn.classList.toggle("active",auto);
 }
 
-/* ===== 当たりゾーン（激辛） ===== */
-let zone={
- x:200,y:520,
- w:12,h:10,
- vx:3.2,vy:2.4,
- vis:false,t:0
-};
-const SHOW=72, HIDE=132;
+/* 当たりゾーン */
+let zone={x:200,y:520,w:10,h:8,vx:3,vy:2,vis:false,t:0};
+const SHOW=60,HIDE=160;
 
-/* ===== 釘 ===== */
+/* 釘 */
 const pins=[];
-for(let y=120;y<=420;y+=48){
- for(let x=70;x<=350;x+=48){
-  pins.push({x,y,r:6});
- }
+for(let y=120;y<=420;y+=48)
+for(let x=70;x<=350;x+=48)
+ pins.push({x,y,r:6});
+
+/* UI更新 */
+function updateUI(){
+ moneyEl.textContent=money;
+ ballsEl.textContent=balls;
+ investEl.textContent=invest;
+ rateEl.textContent=invest?((money/invest)*100).toFixed(1):"--";
+ if(money<=0&&balls<=0) endGame();
 }
 
-/* ===== BGM ===== */
-let audioCtx,osc,bgm=false;
-function toggleBgm(){
- if(!audioCtx) audioCtx=new AudioContext();
- audioCtx.resume();
- if(!bgm){
-  osc=audioCtx.createOscillator();
-  osc.frequency.value=130;
-  osc.connect(audioCtx.destination);
-  osc.start(); bgm=true;
- }else{osc.stop(); bgm=false;}
+/* 玉購入 */
+function buyBalls(){
+ if(money<10000||gameOver) return;
+ money-=10000;
+ balls+=100;
+ invest+=10000;
+ updateUI();
 }
 
-/* ===== フルスクリーン切替 ===== */
-function toggleFullscreen(){
- if(!document.fullscreenElement){
-  document.getElementById("game").requestFullscreen();
- }else{
-  document.exitFullscreen();
- }
-}
-
-/* ===== 発射 ===== */
+/* 発射 */
 function shoot(){
+ if(gameOver) return;
  const now=Date.now();
  if(now-lastShot<COOLDOWN||balls<=0) return;
  lastShot=now;
- balls--; ballsEl.textContent=balls;
- ballList.push({
-  x:210,y:40,
-  vx:(Math.random()-.5)*2,
-  vy:2,hit:false
- });
+ balls--;
+ ballList.push({x:210,y:40,vx:(Math.random()-.5)*2,vy:2,hit:false});
+ updateUI();
 }
 
-/* ===== レバー ===== */
-const knob=document.getElementById("leverKnob");
-let drag=false,sy=0;
-knob.onpointerdown=e=>{drag=true;sy=e.clientY;}
-document.onpointerup=()=>{
- if(drag) shoot();
- knob.style.top="0";drag=false;
-}
-document.onpointermove=e=>{
- if(drag) knob.style.top=Math.min(100,Math.max(0,e.clientY-sy))+"px";
-}
-
-/* ===== Key ===== */
-onkeydown=e=>{
- if(e.code==="Space") shoot();
- if(e.key==="a") toggleAuto();
- if(e.key==="b") toggleBgm();
- if(e.key==="f") toggleFullscreen();
-};
-
-/* ===== 大当たり ===== */
+/* 大当たり */
 function bigWin(){
  document.getElementById("bigWin").style.display="flex";
- balls+=50; ballsEl.textContent=balls;
- setTimeout(()=>document.getElementById("bigWin").style.display="none",1800);
+ money+=200000;
+ setTimeout(()=>document.getElementById("bigWin").style.display="none",1500);
+ updateUI();
 }
 
-/* ===== Loop ===== */
-function loop(){
- /* AUTO */
- if(auto && balls>0 && Date.now()-lastShot>=COOLDOWN) shoot();
+/* ゲームオーバー */
+function endGame(){
+ gameOver=true;
+ document.getElementById("gameOver").style.display="flex";
+}
 
- /* クールバー */
+/* セーブ */
+function saveGame(){
+ localStorage.setItem("pachiSave",
+  JSON.stringify({money,balls,invest}));
+ alert("セーブしました");
+}
+
+/* ロード */
+function loadGame(){
+ const d=localStorage.getItem("pachiSave");
+ if(!d) return;
+ const s=JSON.parse(d);
+ money=s.money; balls=s.balls; invest=s.invest;
+ gameOver=false;
+ document.getElementById("gameOver").style.display="none";
+ updateUI();
+}
+
+/* 🔄 リセット */
+function resetGame(){
+ if(!confirm("ゲームを完全にリセットしますか？")) return;
+ localStorage.removeItem("pachiSave");
+ money=INIT_MONEY;
+ balls=INIT_BALLS;
+ invest=0;
+ ballList=[];
+ gameOver=false;
+ auto=false;
+ autoBtn.classList.remove("active");
+ document.getElementById("gameOver").style.display="none";
+ updateUI();
+}
+
+/* ループ */
+function loop(){
+ if(!gameOver && auto && balls>0 && Date.now()-lastShot>=COOLDOWN) shoot();
  coolBar.style.width=Math.min(100,(Date.now()-lastShot)/COOLDOWN*100)+"%";
 
- /* ゾーン管理 */
  zone.t++;
  if(zone.vis && zone.t>SHOW){zone.vis=false;zone.t=0;}
  if(!zone.vis && zone.t>HIDE){zone.vis=true;zone.t=0;}
@@ -208,48 +226,43 @@ function loop(){
  ctx.fillStyle="#020617";
  ctx.fillRect(0,0,420,640);
 
- /* pins */
  ctx.fillStyle="#94a3b8";
  pins.forEach(p=>{
-  ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.28);ctx.fill();
  });
 
- /* zone */
  if(zone.vis){
   ctx.strokeStyle="#facc15";
   ctx.strokeRect(zone.x,zone.y,zone.w,zone.h);
  }
 
- /* balls */
  ctx.fillStyle="#e5e7eb";
  ballList.forEach(b=>{
   b.vy+=0.22;
   b.x+=b.vx; b.y+=b.vy;
   if(b.x<5||b.x>415) b.vx*=-1;
-
   pins.forEach(p=>{
-   const d=Math.hypot(b.x-p.x,b.y-p.y);
-   if(d<p.r+4){
+   if(Math.hypot(b.x-p.x,b.y-p.y)<p.r+4){
     const a=Math.atan2(b.y-p.y,b.x-p.x);
     b.vx=Math.cos(a)*2;
     b.vy=Math.sin(a)*2;
    }
   });
-
-  if(!b.hit&&zone.vis &&
-     b.x>zone.x&&b.x<zone.x+zone.w &&
+  if(!b.hit&&zone.vis&&
+     b.x>zone.x&&b.x<zone.x+zone.w&&
      b.y>zone.y&&b.y<zone.y+zone.h){
-      b.hit=true;
-      if(Math.random()<0.25) bigWin();
-      b.y=700;
+   b.hit=true;
+   if(Math.random()<0.1) bigWin();
+   b.y=700;
   }
-
-  ctx.beginPath();ctx.arc(b.x,b.y,4,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(b.x,b.y,4,0,6.28);ctx.fill();
  });
 
  ballList=ballList.filter(b=>b.y<660);
  requestAnimationFrame(loop);
 }
+
+updateUI();
 loop();
 </script>
 </body>
