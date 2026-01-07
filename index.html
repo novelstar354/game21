@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>パチンコ</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<link rel="icon" href="https://fontmeme.com/temporary/userlmn_e158b764f395593e30d2788a67ba7f9b.png" sizes="16×16" type="image/png" /> 
+<style>
+body{margin:0;background:#020617;color:#fff;font-family:sans-serif;text-align:center}
+header{padding:10px;font-size:18px;font-weight:bold}
+#game{position:relative;margin:auto;max-width:420px;height:640px;
+ border:3px solid #38bdf8;border-radius:12px;overflow:hidden}
+canvas{display:block}
+#ui{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:8px}
+button{padding:8px 10px;border:none;border-radius:8px;
+ background:#38bdf8;color:#000;font-weight:bold}
+button.active{background:#22c55e}
+
+/* レバー */
+#lever{position:absolute;right:10px;bottom:70px;width:40px;height:160px;
+ background:#334155;border-radius:20px}
+#leverKnob{position:absolute;left:50%;transform:translateX(-50%);
+ width:50px;height:50px;background:#facc15;border-radius:50%;top:0}
+
+/* クールタイム */
+#coolWrap{
+ position:absolute;left:10px;top:10px;width:140px;height:12px;
+ border:1px solid #38bdf8;border-radius:6px;overflow:hidden;
+ background:#020617;z-index:10
+}
+#coolBar{height:100%;width:100%;background:#38bdf8}
+
+/* 大当たり */
+#bigWin{position:absolute;inset:0;display:none;align-items:center;
+ justify-content:center;background:rgba(0,0,0,.85);z-index:5}
+#bigWin span{font-size:42px;color:#facc15;
+ animation:zoom 1s infinite alternate}
+@keyframes zoom{to{transform:scale(1.3)}}
+
+/* 操作説明 */
+#help{
+ position:absolute;left:8px;bottom:8px;
+ background:rgba(0,0,0,.6);border-radius:8px;
+ padding:8px 10px;font-size:12px;line-height:1.4;text-align:left;
+ pointer-events:none;z-index:10
+}
+footer {
+           padding: 30px;
+           text-align: center;
+           font-size: 0.85rem;
+           color: rgba(255,255,255,0.5);
+           border-top: 1px solid rgba(255,255,255,0.1);
+           margin-top: 60px;
+       }
+</style>
+</head>
+<body>
+
+<header>パチンコ</header>
+
+<div id="game">
+ <canvas id="c" width="420" height="640"></canvas>
+
+ <div id="coolWrap"><div id="coolBar"></div></div>
+
+ <div id="lever"><div id="leverKnob"></div></div>
+
+ <div id="bigWin"><span>🎉 大当たり！ 🎉</span></div>
+
+ <div id="help">
+  <b>操作</b><br>
+  Space：発射<br>
+  A：AUTO連射<br>
+  B：BGM<br>
+  F：フルスクリーン切替<br>
+  レバー：引いて離す
+ </div>
+</div>
+
+<div id="ui">
+ 玉:<span id="balls">100</span>
+ <button onclick="shoot()">発射</button>
+ <button id="autoBtn" onclick="toggleAuto()">AUTO</button>
+ <button onclick="toggleBgm()">BGM</button>
+ <button onclick="toggleFullscreen()">FULL</button>
+</div>
+<footer>
+       © 2025 GAMEHUB - All Rights Reserved.
+   </footer>
+<script>
+/* ===== Canvas ===== */
+const c=document.getElementById("c"),ctx=c.getContext("2d");
+
+/* ===== State ===== */
+let balls=300,ballList=[];
+const ballsEl=document.getElementById("balls");
+
+/* ===== クールタイム ===== */
+const COOLDOWN=800;
+let lastShot=0;
+const coolBar=document.getElementById("coolBar");
+
+/* ===== AUTO連射 ===== */
+let auto=false;
+const autoBtn=document.getElementById("autoBtn");
+function toggleAuto(){
+ auto=!auto;
+ autoBtn.classList.toggle("active",auto);
+}
+
+/* ===== 当たりゾーン（激辛） ===== */
+let zone={
+ x:200,y:520,
+ w:12,h:10,
+ vx:3.2,vy:2.4,
+ vis:false,t:0
+};
+const SHOW=72, HIDE=132;
+
+/* ===== 釘 ===== */
+const pins=[];
+for(let y=120;y<=420;y+=48){
+ for(let x=70;x<=350;x+=48){
+  pins.push({x,y,r:6});
+ }
+}
+
+/* ===== BGM ===== */
+let audioCtx,osc,bgm=false;
+function toggleBgm(){
+ if(!audioCtx) audioCtx=new AudioContext();
+ audioCtx.resume();
+ if(!bgm){
+  osc=audioCtx.createOscillator();
+  osc.frequency.value=130;
+  osc.connect(audioCtx.destination);
+  osc.start(); bgm=true;
+ }else{osc.stop(); bgm=false;}
+}
+
+/* ===== フルスクリーン切替 ===== */
+function toggleFullscreen(){
+ if(!document.fullscreenElement){
+  document.getElementById("game").requestFullscreen();
+ }else{
+  document.exitFullscreen();
+ }
+}
+
+/* ===== 発射 ===== */
+function shoot(){
+ const now=Date.now();
+ if(now-lastShot<COOLDOWN||balls<=0) return;
+ lastShot=now;
+ balls--; ballsEl.textContent=balls;
+ ballList.push({
+  x:210,y:40,
+  vx:(Math.random()-.5)*2,
+  vy:2,hit:false
+ });
+}
+
+/* ===== レバー ===== */
+const knob=document.getElementById("leverKnob");
+let drag=false,sy=0;
+knob.onpointerdown=e=>{drag=true;sy=e.clientY;}
+document.onpointerup=()=>{
+ if(drag) shoot();
+ knob.style.top="0";drag=false;
+}
+document.onpointermove=e=>{
+ if(drag) knob.style.top=Math.min(100,Math.max(0,e.clientY-sy))+"px";
+}
+
+/* ===== Key ===== */
+onkeydown=e=>{
+ if(e.code==="Space") shoot();
+ if(e.key==="a") toggleAuto();
+ if(e.key==="b") toggleBgm();
+ if(e.key==="f") toggleFullscreen();
+};
+
+/* ===== 大当たり ===== */
+function bigWin(){
+ document.getElementById("bigWin").style.display="flex";
+ balls+=50; ballsEl.textContent=balls;
+ setTimeout(()=>document.getElementById("bigWin").style.display="none",1800);
+}
+
+/* ===== Loop ===== */
+function loop(){
+ /* AUTO */
+ if(auto && balls>0 && Date.now()-lastShot>=COOLDOWN) shoot();
+
+ /* クールバー */
+ coolBar.style.width=Math.min(100,(Date.now()-lastShot)/COOLDOWN*100)+"%";
+
+ /* ゾーン管理 */
+ zone.t++;
+ if(zone.vis && zone.t>SHOW){zone.vis=false;zone.t=0;}
+ if(!zone.vis && zone.t>HIDE){zone.vis=true;zone.t=0;}
+ if(zone.vis){
+  zone.x+=zone.vx; zone.y+=zone.vy;
+  if(zone.x<60||zone.x+zone.w>360) zone.vx*=-1;
+  if(zone.y<480||zone.y+zone.h>580) zone.vy*=-1;
+ }
+
+ ctx.fillStyle="#020617";
+ ctx.fillRect(0,0,420,640);
+
+ /* pins */
+ ctx.fillStyle="#94a3b8";
+ pins.forEach(p=>{
+  ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();
+ });
+
+ /* zone */
+ if(zone.vis){
+  ctx.strokeStyle="#facc15";
+  ctx.strokeRect(zone.x,zone.y,zone.w,zone.h);
+ }
+
+ /* balls */
+ ctx.fillStyle="#e5e7eb";
+ ballList.forEach(b=>{
+  b.vy+=0.22;
+  b.x+=b.vx; b.y+=b.vy;
+  if(b.x<5||b.x>415) b.vx*=-1;
+
+  pins.forEach(p=>{
+   const d=Math.hypot(b.x-p.x,b.y-p.y);
+   if(d<p.r+4){
+    const a=Math.atan2(b.y-p.y,b.x-p.x);
+    b.vx=Math.cos(a)*2;
+    b.vy=Math.sin(a)*2;
+   }
+  });
+
+  if(!b.hit&&zone.vis &&
+     b.x>zone.x&&b.x<zone.x+zone.w &&
+     b.y>zone.y&&b.y<zone.y+zone.h){
+      b.hit=true;
+      if(Math.random()<0.25) bigWin();
+      b.y=700;
+  }
+
+  ctx.beginPath();ctx.arc(b.x,b.y,4,0,Math.PI*2);ctx.fill();
+ });
+
+ ballList=ballList.filter(b=>b.y<660);
+ requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
